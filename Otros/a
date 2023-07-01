@@ -1,0 +1,722 @@
+/**
+ *
+ *
+ *
+ */
+template<>
+class BigInt<2> {
+ public: 
+  /// Constructores
+  BigInt(long n = 0);
+  BigInt(std::string&);
+  BigInt(const char*);
+  BigInt(const BigInt<2>&); /// Constructor de copia
+  /// Getter
+  std::vector<bool> digits() const { return digits_; }
+  /// Setter
+  void set_digits(const std::vector<bool>& digits) { digits_ = digits; }
+  /// Transformadores de Base
+  operator BigInt<8>() const; // código de conversión de binario a octal 
+  operator BigInt<10>() const; // código de conversión de binario a decimal 
+  operator BigInt<16>() const; // código de conversión de binario a hexadecimal 
+  /// Asignación
+  BigInt<2>& operator=(const BigInt<2>&);
+  /// Inserción y extracción en flujo
+  friend std::ostream& operator<< <2>(std::ostream&, const BigInt<2>&); 
+  friend std::istream& operator>> <2>(std::istream&, BigInt<2>&);
+  /// Accesor
+  bool operator[](int) const; /// Acceso al i-ésimo dígito
+  /// Comparación
+  friend bool operator== <2>(const BigInt<2>&, const BigInt<2> &); 
+  bool operator!=(const BigInt<2>&) const;
+  friend bool operator> <2>(const BigInt<2>&, const BigInt<2> &); 
+  bool operator>=(const BigInt<2> &) const;
+  friend bool operator< <2>(const BigInt<2>&, const BigInt<2>&); 
+  bool operator<=(const BigInt<2>&) const;
+  /// Incremento/decremento
+  BigInt<2>& operator++(); /// Pre-incremento
+  BigInt<2> operator++(int); /// Post-incremento
+  BigInt<2>& operator--(); /// Pre-decremento
+  BigInt<2> operator--(int); /// Pre-decremento 
+  /// Operadores Aritméticos
+  friend BigInt<2> operator+ <2>(const BigInt<2>&, const BigInt<2>&); 
+  BigInt<2> operator-(const BigInt<2> &) const;
+  BigInt<2> operator-() const;
+  BigInt<2> operator*(const BigInt<2>&) const;
+  friend BigInt<2> operator/ <2>(const BigInt<2>&, const BigInt<2>&); 
+  BigInt<2> operator%(const BigInt<2>&) const;
+  /// Potencia a^b
+  friend BigInt<2> power <2>(const BigInt<2>&, const BigInt<2>&);
+ private:
+  std::vector<bool> digits_;
+  bool is_negative_;
+};
+
+std::vector<bool> complementar_vector(const std::vector<bool>& digits_to_c2) {
+  std::vector<bool> digits = digits_to_c2, nw_digits;
+  bool condition = false;
+  int num_of_ones = 0;
+  for (int i = 0; i < (int)digits.size(); i++) {
+    if (!condition && digits[i]) {
+      condition = true;
+      nw_digits.push_back(digits[i]);
+    } else if (condition) {
+      nw_digits.push_back(!digits[i]);
+    } else {
+      nw_digits.push_back(digits[i]);
+    }
+    if (digits[i]) {
+      ++num_of_ones;
+    }
+  }
+  return nw_digits;
+}
+
+std::vector<bool> absolute_increase_2(const std::vector<bool>& vector_of_digits) {
+  std::vector<bool> digits_ = vector_of_digits;
+  bool carry = true;
+  for (int i = 0; i < (int)digits_.size(); ++i) {
+    if (!carry) {
+      break;
+    }
+    if (digits_[i] == false) {
+      digits_[i] = true;
+      carry = false;
+    } else {
+      digits_[i] = false;
+      carry = true;
+    }
+  }
+  return digits_;
+}
+
+
+std::vector<bool> absolute_decrease_2(const std::vector<bool>& vector_of_digits) {
+  std::vector<bool> digits_ = vector_of_digits;
+  for (int i = 0; i < (int)digits_.size(); ++i) {
+    if (digits_[i] == true) {
+      digits_[i] = false;
+      break;
+    } else {
+      digits_[i] = true;
+    }
+  }
+  return digits_;
+}
+
+BigInt<2> absolute_sum_2(const BigInt<2>& a, const BigInt<2>& b) {
+  std::vector<bool> sum;
+  std::vector<bool> digits_a = a.digits();
+  std::vector<bool> digits_b = b.digits();
+  int n = digits_a.size();
+  int m = digits_b.size();
+  int i = 0, j = 0;
+  bool carry = false, condition = (digits_a[n - 1] == digits_b[m - 1]);
+  while (i < n && j < m) {
+    if (digits_a[i] == false && digits_b[j] == false) {
+      sum.push_back(carry);
+      carry = false;
+    } else if (digits_a[i] == true && digits_b[j] == true) {
+      sum.push_back(carry);
+      carry = true;
+    } else {
+      sum.push_back(!carry);
+    }
+    i++;
+    j++;
+  }
+  while (i < n) {
+    if (digits_a[i] == false) {
+      sum.push_back(carry);
+      carry = false;
+    } else {
+      sum.push_back(!carry);
+    }
+    i++;
+  }
+  while (j < m) {
+    if (digits_b[j] == false) {
+      sum.push_back(carry);
+      carry = false;
+    } else {
+      sum.push_back(!carry);
+    }
+    j++;
+  }
+  /// Línea por comprobar 
+  if (carry && condition) {
+    sum.push_back(true);
+  }
+  /// -------------------
+  BigInt<2> num_final;
+  num_final.set_digits(sum);
+  return num_final;
+}
+
+/**
+ * @brief Constructor de la clase BigInt para números del tipo long
+ * @param long : Objeto del tipo long
+ */
+BigInt<2>::BigInt(long n) {
+  std::vector<bool> digits;
+  bool is_negative = false;
+  /// Comprobar si el número es negativo
+  if (n < 0) {
+    is_negative = true;
+    n = -n;
+  }
+  do {
+    digits.push_back(n % 2);
+    n /= 2;
+  } while (n > 0);
+  digits.push_back(false);
+  if (is_negative) {
+    digits = complementar_vector(digits);
+  }
+  digits_ = digits;
+}
+
+/**
+ * @brief Constructor de la clase BigInt para cadenas
+ * @param s : Objeto del tipo string
+ */
+BigInt<2>::BigInt(std::string& s) {
+  std::vector<bool> digits;
+  bool is_negative = false;
+  /// Comprobar si el número es negativo
+  int j = 0;
+  if (s[0] == '-') {
+    is_negative = true;
+    ++j;
+  }
+  bool begin_not_zero = false;
+  std::string aux;
+  for (size_t i = j; i < s.size() - 1; i++) {
+    if (s[i] != '0' && !begin_not_zero) {
+      begin_not_zero = true;
+    }
+    if (begin_not_zero) {
+      aux.push_back(s[i]);
+    }
+  }
+  aux.push_back(s[s.size() - 1]);
+  s = aux;
+  for (int i = s.size() - 1; i >= j; i--) {
+    if (s[i] == '0') {
+      digits.push_back(false);
+    } else if (s[i] == '1') {
+      digits.push_back(true);
+    } else {
+      throw std::invalid_argument("El número introducido no cumple los requisitos de la base especificada");
+    }
+  }
+  digits.push_back(false);
+  if (is_negative) {
+    digits = complementar_vector(digits);
+  }
+  digits_ = digits;
+}
+
+/**
+ * @brief Constructor de la clase BigInt para números del tipo char* (array de char)
+ * @param n : Objeto del tipo char*
+ */
+BigInt<2>::BigInt(const char* n) {
+  std::vector<bool> digits;
+  /// Comprobar si el número es negativo
+  int j = 0;
+  bool is_negative = false;
+  if (n[0] == '-') {
+    is_negative = true;
+    j++;
+  }
+  bool begin_not_zero = false;
+  std::string aux;
+  for (size_t i = j; i < strlen(n) - 1; i++) {
+    if (n[i] != '0' && !begin_not_zero) {
+      begin_not_zero = true;
+    }
+    if (begin_not_zero) {
+      aux.push_back(n[i]);
+    }
+  }
+  aux.push_back(n[strlen(n) - 1]);
+  n = aux.c_str();
+  for (int i = strlen(n) - 1; i >= j; i--) {
+    if (n[i] == '0') {
+      digits.push_back(false);
+    } else if (n[i] == '1') {
+      digits.push_back(true);
+    } else {
+      throw std::invalid_argument("El número introducido no cumple los requisitos de la base especificada");
+    }
+  }
+  digits.push_back(false);
+  if (is_negative) {
+    digits = complementar_vector(digits);
+  }
+  digits_ = digits;
+}
+
+/**
+ * @brief Constructor de la clase BigInt para números de la clase BigInt
+ * @param n : Objeto del tipo BigInt
+ */
+BigInt<2>::BigInt(const BigInt<2>& n) {
+  digits_ = n.digits_;
+}
+
+/**
+ * @brief Sobrecarga del operador de asignación de la clase BigInt<2>
+ * @param n : Objeto del tipo BigInt
+ */
+BigInt<2>& BigInt<2>::operator=(const BigInt<2>& n) {
+  digits_ = n.digits_;
+  return *this;
+}
+
+/**
+ * @brief Sobrecarga del operador de extracción de flujo de la clase BigInt
+ * @param out : Objeto del tipo flujo estándar de salida
+  * @param a : Objeto del tipo BigInt
+ */
+template<>
+std::ostream& operator<< <2>(std::ostream& out, const BigInt<2>& a) {
+  for (int i = a.digits_.size() - 1; i >= 0; i--) {
+    out << a.digits_[i];
+  }
+  return out;
+}
+
+/**
+ * @brief Sobrecarga del operador de inserción de flujo de la clase BigInt
+ * @param in : Objeto del tipo flujo estándar de entrada
+ * @param a : Objeto del tipo BigInt
+ */
+template<>
+std::istream& operator>> <2>(std::istream& in, BigInt<2>& a) {
+  std::string s;
+  in >> s;
+  std::vector<bool> digits;
+  bool is_negative = false;
+  /// Comprobar si el número es negativo
+  int j = 0;
+  if (s[0] == '-') {
+    is_negative = true;
+    ++j;
+  }
+  bool begin_not_zero = false;
+  std::string aux;
+  for (size_t i = j; i < s.size() - 1; i++) {
+    if (s[i] != '0' && !begin_not_zero) {
+      begin_not_zero = true;
+    }
+    if (begin_not_zero) {
+      aux.push_back(s[i]);
+    }
+  }
+  aux.push_back(s[s.size() - 1]);
+  s = aux;
+  for (int i = s.size() - 1; i >= j; i--) {
+    if (s[i] == '0') {
+      digits.push_back(false);
+    } else if (s[i] == '1') {
+      digits.push_back(true);
+    } else {
+      throw std::invalid_argument("El número introducido no cumple los requisitos de la base especificada");
+    }
+  }
+  if (is_negative) {
+    digits = complementar_vector(digits);
+  }
+  a.set_digits(digits);
+  return in;
+}
+
+/**
+ * Sobrecarga del operador []
+ * @brief Permite obtener el valor en el objeto en la posición indicada
+ */
+bool BigInt<2>::operator[](int i) const {
+  assert(i >= 0 && i < (int)digits_.size());
+  return digits_[i];
+}
+
+/**
+ * Sobrecarga del operador ==
+ * @brief Permite obtener si ambos objetos de la clase BigInt son iguales
+ * @param a : Objeto del tipo BigInt
+ * @param b : Objeto del tipo BigInt
+ */
+bool operator==(const BigInt<2>& a, const BigInt<2> & b) {
+  if ((a.digits()[a.digits().size() - 1] != b.digits()[b.digits().size() - 1])) {
+    return false;
+  }
+  for (size_t i = 0; i < std::min(a.digits().size(), b.digits().size()); i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  if (a.digits().size() != b.digits().size()) {
+    if (a.digits().size() > b.digits().size()) {
+      int diff = a.digits().size() - b.digits().size();
+      for (int i = 0; i < diff; i++) {
+        if (a.digits()[a.digits().size() - 1 - i] != b.digits()[b.digits().size()]) {
+          return false;
+        }
+      }
+    } else {
+      int diff = b.digits().size() - a.digits().size();
+      for (int i = 0; i < diff; i++) {
+        if (b.digits()[b.digits().size() - 1 - i] != a.digits()[a.digits().size()]) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Sobrecarga del operador !=
+ * @brief Permite obtener si ambos objetos de la clase BigInt no son iguales
+ * @param a : Objeto del tipo BigInt
+ * @param b : Objeto del tipo BigInt
+ */
+bool BigInt<2>::operator!=(const BigInt<2>& b) const {
+  return !(*this == b);
+}
+
+/**
+ * Sobrecarga del operador >
+ * @brief Permite obtener si el primer objeto especificado de la clase BigInt es mayor que el segundo
+ * @param a : Objeto del tipo BigInt
+ * @param b : Objeto del tipo BigInt
+ */
+bool operator>(const BigInt<2>& a, const BigInt<2> & b) {
+  if (a.digits()[a.digits().size() - 1] != b.digits()[b.digits().size() - 1]) {
+    if (a.digits()[a.digits().size() - 1] && !b.digits()[b.digits().size() - 1]) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+  BigInt<2> c, d;
+  c = a;
+  d = b;
+  if (a.digits()[a.digits().size() - 1] == true) {
+    c = -a;
+    d = -b;
+  }
+  std::vector<bool> digits_c = c.digits(), digits_d = d.digits();
+  if (c.digits().size() != d.digits().size()) {
+    if (c.digits().size() < d.digits().size()) {
+      int difference = (d.digits().size() - c.digits().size());
+      bool bms = c.digits()[c.digits().size() - 1];
+      for (int i = 0; i < difference; i++) {
+        digits_c.push_back(bms);
+      }
+    } else {
+      int difference = (c.digits().size() - d.digits().size());
+      bool bms = d.digits()[d.digits().size() - 1];
+      for (int i = 0; i < difference; i++) {
+        digits_d.push_back(bms);
+      }
+    }
+  }
+  c.set_digits(digits_c);
+  d.set_digits(digits_d);
+  for (int i = c.digits().size() - 1; i >= 0; i--) {
+    if (c[i] != d[i]) {
+      if (c[i] > d[i]) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+  if (a == b) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Sobrecarga del operador >=
+ * @brief Permite obtener si el primer objeto especificado de la clase BigInt es mayor o igual que el segundo
+ * @param b : Objeto del tipo BigInt
+ */
+bool BigInt<2>::operator>=(const BigInt<2> & b) const {
+  return (*this == b || *this > b);
+}
+
+/**
+ * Sobrecarga del operador >
+ * @brief Permite obtener si el primer objeto especificado de la clase BigInt es menor que el segundo
+ * @param a : Objeto del tipo BigInt
+ * @param b : Objeto del tipo BigInt
+ */
+bool operator<(const BigInt<2>& a, const BigInt<2>& b) {
+  return !(a >= b);
+}
+
+/**
+ * Sobrecarga del operador >=
+ * @brief Permite obtener si el primer objeto especificado de la clase BigInt es menor o igual que el segundo
+ * @param b : Objeto del tipo BigInt
+ */
+bool BigInt<2>::operator<=(const BigInt<2>& b) const {
+  return (*this == b || *this < b);
+}
+
+
+/**
+ * Sobrecarga del operador ++
+ * @brief Permite aumentar en una unidad el objeto invocante
+ */
+BigInt<2>& BigInt<2>::operator++() {
+  std::vector<bool> &digits = this->digits_;
+  bool condition_is_positive = false;
+  if (digits[digits.size() - 1] == false) {
+    condition_is_positive = true;
+  }
+  digits = absolute_increase_2(digits);
+  if ((digits[digits.size() - 1]) && condition_is_positive) {
+    digits.push_back(false);
+  } else if (!(digits[digits.size() - 1]) && !condition_is_positive) {
+    bool begin_not_zero = false;
+    for (size_t i = (digits.size() - 1); i > 0; i--) {
+      if (digits[i] != false && !begin_not_zero) {
+        begin_not_zero = true;
+      }
+      digits.pop_back();
+    }
+  }
+  return *this;
+}
+
+/**
+ * Sobrecarga del operador ++
+ * @brief Permite aumentar en una unidad el objeto invocante
+ */
+BigInt<2> BigInt<2>::operator++(int) {
+  BigInt<2> temp(*this);
+  ++(*this);
+  return temp;
+}
+
+/**
+ * Sobrecarga del operador --
+ * @brief Permite decrementar en una unidad el objeto invocante
+ */
+BigInt<2>& BigInt<2>::operator--() {
+  std::vector<bool> &digits = this->digits_;
+  BigInt<2> c;
+  if (*this == c) {
+    digits.pop_back();
+    digits.pop_back();
+    digits.push_back(true);
+    digits.push_back(true);
+    return *this;
+  }
+  digits = absolute_decrease_2(digits);
+  return *this;
+}
+
+/**
+ * Sobrecarga del operador --
+ * @brief Permite decrementar en una unidad el objeto invocante
+ */
+BigInt<2> BigInt<2>::operator--(int) {
+  BigInt<2> temp(*this);
+  --(*this);
+  return temp;
+}
+
+/**
+ * Sobrecarga del operador +
+ * @brief Permite sumar dos objetos de la clase BigInt
+ * @param a : Objeto del tipo BigInt
+ * @param b : Objeto del tipo BigInt
+ */
+BigInt<2> operator+(const BigInt<2>& a, const BigInt<2>& b) {
+  BigInt<2> c, d, e;
+  std::vector<bool> digits_a = a.digits(), digits_b = b.digits();
+  if (a.digits().size() != b.digits().size()) {
+    if (a.digits().size() < b.digits().size()) {
+      int difference = (b.digits().size() - a.digits().size());
+      bool bms = a.digits()[a.digits().size() - 1];
+      for (int i = 0; i < difference; i++) {
+        digits_a.push_back(bms);
+      }
+    } else {
+      int difference = (a.digits().size() - b.digits().size());
+      bool bms = b.digits()[b.digits().size() - 1];
+      for (int i = 0; i < difference; i++) {
+        digits_b.push_back(bms);
+      }
+    }
+  }
+  d.set_digits(digits_a);
+  e.set_digits(digits_b);
+  c = absolute_sum_2(d, e);
+  digits_a = c.digits();
+  if (a.digits()[a.digits().size() - 1] == b.digits()[b.digits().size() - 1]) {
+    digits_a = c.digits();
+    if (a.digits()[a.digits().size() - 1] != c.digits()[c.digits().size() - 1]) {
+      if (a.digits()[a.digits().size() - 1]) {
+        digits_a.push_back(true);
+      } else {
+        digits_a.push_back(false);
+      }
+    }
+    c.set_digits(digits_a);
+  }
+  return c;
+}
+
+/**
+ * Sobrecarga del operador -
+ * @brief Permite restar dos objetos de la clase BigInt
+ * @param a : Objeto del tipo BigInt
+ * @param b : Objeto del tipo BigInt
+ */
+BigInt<2> BigInt<2>::operator-(const BigInt<2> &b) const {
+  BigInt<2> c, d;
+  d = -b;
+  c = *this + d;
+  return c;
+}
+
+/**
+ * Sobrecarga del operador -
+ * @brief Permite cambiar el signo del objeto invocante
+ */
+BigInt<2> BigInt<2>::operator-() const {
+  std::vector<bool> digits_ = digits(), nw_digits;
+  bool condition = false;
+  int num_of_ones = 0;
+  for (int i = 0; i < (int)digits_.size(); i++) {
+    if (!condition && digits_[i]) {
+      condition = true;
+      nw_digits.push_back(digits_[i]);
+    } else if (condition) {
+      nw_digits.push_back(!digits_[i]);
+    } else {
+      nw_digits.push_back(digits_[i]);
+    }
+    if (digits_[i]) {
+      ++num_of_ones;
+    }
+  }
+  if (num_of_ones == (int)digits_.size()) {
+    nw_digits.push_back(true);
+  }
+  BigInt<2> number_to_return;
+  number_to_return.set_digits(nw_digits);
+  return number_to_return;
+}
+
+
+/**
+ * Sobrecarga del operador ^
+ * @brief Permite multiplicar dos objetos de la clase BigInt
+ * @param a : Objeto del tipo BigInt
+ * @param b : Objeto del tipo BigInt
+ */
+BigInt<2> BigInt<2>::operator*(const BigInt<2>& b) const {
+  BigInt<2> c, d, e, f;
+  if (*this == c || b == c) {
+    return c;
+  }
+  e = b;
+  if (b < d) {
+    e = -b;
+  }
+  f = *this;
+  if (f.digits()[f.digits().size() - 1]) {
+    f = -f;
+  }
+  while (d != e) {
+    c = c + f;
+    e--;
+  }
+  f = *this;
+  if (f.digits()[f.digits().size() - 1] != b.digits()[b.digits().size() - 1]) {
+    c = -c;
+  }
+  return c;
+}
+
+/**
+ * Sobrecarga del operador /
+ * @brief Permite obtener el cociente dos objetos de la clase BigInt
+ * @param a : Objeto del tipo BigInt
+ * @param b : Objeto del tipo BigInt
+ */
+BigInt<2> operator/(const BigInt<2>& a, const BigInt<2>& b) {
+  BigInt<2> c, d;
+  if (b == c) {
+    throw std::invalid_argument("Division por cero");
+  }
+  if (a == c) {
+    return c;
+  }
+  c = a;
+  while (c >= b) {
+    c = c - b;
+    ++d;
+  }
+  if (a.digits()[a.digits().size() - 1] != b.digits()[b.digits().size() - 1]) {
+    d = -d;
+  }
+  return d;
+}
+
+/**
+ * Sobrecarga del operador %
+ * @brief Permite obtener el módulo dos objetos de la clase BigInt
+ * @param a : Objeto del tipo BigInt
+ * @param b : Objeto del tipo BigInt
+ */
+BigInt<2> BigInt<2>::operator%(const BigInt<2>& b) const {
+  BigInt<2> c, d, e;
+  bool condition = false;
+  if (b == c) {
+    throw std::invalid_argument("Division por cero");
+  }
+  if (*this == c) {
+    return c;
+  }
+  c = *this;
+  while (c >= b) {
+    condition = true;
+    c = c - b;
+    ++d;
+  }
+  if (condition && (c != e)) {
+    e = *this;
+    if (e.digits()[e.digits().size() - 1]) {
+      c = -c;
+    }
+  }
+  return c;
+}
+
+/**
+ * Power
+ * @brief Permite elevar la potencia de un objeto de la clase BigInt elevado a otro objeto
+ * @param a : Objeto del tipo BigInt
+ * @param b : Objeto del tipo BigInt
+ */
+BigInt<2> power(const BigInt<2>& a, const BigInt<2>& b) {
+  BigInt<2> c(1), d;
+  if (b.digits()[b.digits().size() - 1]) {
+    throw std::invalid_argument("Representación entera!");
+  }
+  while (d != b) {
+    c = a * c;
+    ++d;
+  }
+  return c;
+}

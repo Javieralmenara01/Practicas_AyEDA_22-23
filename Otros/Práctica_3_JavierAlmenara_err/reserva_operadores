@@ -1,0 +1,127 @@
+
+/**
+ * Operador de conversión de tipo
+ * @brief: permite convertir un objeto en base 2, a cualquier tipo de base
+ */
+BigInt<2>::operator BigInt<2>() const {  
+  return *this;
+}
+
+/**
+ * Operador de conversión de tipo
+ * @brief: permite convertir un objeto en base 8, a base 2
+ */
+BigInt<2>::operator BigInt<8>() const {
+  BigInt<8> result;
+  BigInt<2> actual_num = *this;
+  bool condition = false;
+  if (digits()[digits().size() - 1]) {
+    actual_num = -actual_num;
+    condition = true;
+  }
+  std::vector<char> digits_octal;
+  std::vector<bool> digits = actual_num.digits();
+  int len = digits.size();
+  if (len % 3 == 1) {
+    digits.push_back(0);
+    digits.push_back(0);
+  } 
+  if (len % 3 == 2) {
+    digits.push_back(0);
+  } 
+  len = digits.size();
+  for (int i = len - 1; i >= 0; i -= 3) {
+    int octal = 0;
+    octal += (digits[i] << 2);
+    octal += (digits[i - 1] << 1);
+    octal += (digits[i - 2]);
+  }
+  for (int i = digits_octal.size() - 1; i > 0; i--) {
+    if ((short)digits_octal[i] == 0) {
+      digits_octal.pop_back();
+    } else {
+      break;
+    }
+  }
+  result.set_digits(digits_octal);
+  if (condition) {
+    result.set_is_negative(true);
+  }
+  return result;
+}
+
+/**
+ * Operador de conversión de tipo
+ * @brief: permite convertir un objeto en base 10, a base 2
+ */
+BigInt<2>::operator BigInt<10>() const {
+  BigInt<2> actual_num = *this;
+  BigInt<10> result;
+  BigInt<10> base{1}, temp, dos(2);
+  bool condition = false;
+  if (digits()[digits().size() - 1]) {
+    actual_num = -actual_num;
+    condition = true;
+  }
+  for (bool digit : actual_num.digits()) {
+    if (digit) {
+      temp = temp.add(base);
+    }
+    base = base * dos;
+  }
+  result = temp;
+  if (condition) {
+    result.set_is_negative(true);
+  }
+  return result;
+}
+
+/**
+ * Operador de conversión de tipo
+ * @brief: permite convertir un objeto en base 16, a base 2
+ */
+BigInt<2>::operator BigInt<16>() const {
+  BigInt<16> result;
+  BigInt<2> actual_num = *this;
+  bool condition = false;
+  if (digits()[digits().size() - 1]) {
+    actual_num = -actual_num;
+    condition = true;
+  }
+  std::vector<char> digits_hex;
+  std::vector<bool> digits = actual_num.digits();
+  int len = digits.size();
+  if (len % 4 == 1) {
+    digits.push_back(false);
+    digits.push_back(false);
+    digits.push_back(false);
+  }
+  if (len % 4 == 2) {
+    digits.push_back(false);
+    digits.push_back(false);
+  }
+  if (len % 4 == 3) {
+    digits.push_back(false);
+  }
+  len = digits.size();
+  for (int i = len - 1; i > 0; i -= 4) {
+    int hex = 0;
+    hex += (digits[i] << 3);
+    hex += (digits[i - 1] << 2);
+    hex += (digits[i - 2] << 1);
+    hex += digits[i - 3];
+    digits_hex.insert(digits_hex.begin(), hex);
+  }
+  for (int i = digits_hex.size() - 1; i > 0; i--) {
+    if ((short)digits_hex[i] == 0) {
+      digits_hex.pop_back();
+    } else {
+      break;
+    }
+  }
+  result.set_digits(digits_hex);
+  if (condition) {
+    result.set_is_negative(true);
+  }
+  return result;
+}
